@@ -33,6 +33,59 @@ function fetch_admin_articles(int $limit = 50): array
     return $articles;
 }
 
+function fetch_admin_article_by_id(int $articleId): ?array
+{
+    if ($articleId <= 0) {
+        return null;
+    }
+
+    $conn = db_connect();
+    $stmt = $conn->prepare(
+        'SELECT Id_article, titre, contenu, auteur, date_evenement, created_at, updated_at
+         FROM article
+         WHERE Id_article = ?
+         LIMIT 1'
+    );
+    $stmt->bind_param('i', $articleId);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $row = $result->fetch_assoc() ?: null;
+
+    $stmt->close();
+    $conn->close();
+
+    return $row;
+}
+
+function fetch_article_images(int $articleId): array
+{
+    if ($articleId <= 0) {
+        return [];
+    }
+
+    $images = [];
+    $conn = db_connect();
+    $stmt = $conn->prepare(
+        'SELECT m.Id_media, m.path
+         FROM media_article ma
+         INNER JOIN media m ON m.Id_media = ma.Id_media
+         WHERE ma.Id_article = ?
+         ORDER BY m.Id_media DESC'
+    );
+    $stmt->bind_param('i', $articleId);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    while ($row = $result->fetch_assoc()) {
+        $images[] = $row;
+    }
+
+    $stmt->close();
+    $conn->close();
+
+    return $images;
+}
+
 function create_article(string $titre, string $contenu, string $auteur, ?string $dateEvenement): int
 {
     $conn = db_connect();
@@ -59,6 +112,40 @@ function create_article(string $titre, string $contenu, string $auteur, ?string 
         $conn->close();
 
         return $id;
+    } catch (Throwable $e) {
+        $conn->rollback();
+        $conn->close();
+        throw $e;
+    }
+}
+
+function update_article(int $articleId, string $titre, string $contenu, string $auteur, ?string $dateEvenement): void
+{
+    if ($articleId <= 0) {
+        throw new InvalidArgumentException('Id article invalide.');
+    }
+
+    $conn = db_connect();
+    $conn->begin_transaction();
+
+    try {
+        $rawContenu = $contenu;
+        $contenu = remove_images_from_content($contenu);
+
+        $slug = build_slug($titre);
+        $stmt = $conn->prepare(
+            'UPDATE article
+             SET titre = ?, contenu = ?, slug = ?, auteur = ?, date_evenement = ?, updated_at = NOW()
+             WHERE Id_article = ?'
+        );
+        $stmt->bind_param('sssssi', $titre, $contenu, $slug, $auteur, $dateEvenement, $articleId);
+        $stmt->execute();
+        $stmt->close();
+
+        link_article_images_from_content($conn, $articleId, $rawContenu);
+
+        $conn->commit();
+        $conn->close();
     } catch (Throwable $e) {
         $conn->rollback();
         $conn->close();
@@ -183,6 +270,10 @@ function build_slug(string $title): string
 
 function save_article_image(mysqli $conn, int $articleId, array $imageFile): void
 {
+    if ($articleId <= 0) {
+        throw new InvalidArgumentException('Id article invalide.');
+    }
+
     if (($imageFile['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
         throw new RuntimeException('Upload image invalide.');
     }
@@ -212,9 +303,10 @@ function save_article_image(mysqli $conn, int $articleId, array $imageFile): voi
     }
 
     $ext = $allowedMimeToExt[$mime];
-    $fileName = 'article-' . $articleId . '-' . bin2hex(random_bytes(6)) . '.' . $ext;
+    $subDir = 'modif/article-' . $articleId;
+    $fileName = 'article-' . $articleId . '-' . date('YmdHis') . '-' . bin2hex(random_bytes(4)) . '.' . $ext;
 
-    $uploadDir = dirname(__DIR__, 2) . '/uploads/articles';
+    $uploadDir = dirname(__DIR__, 2) . '/uploads/articles/' . $subDir;
     if (!is_dir($uploadDir) && !mkdir($uploadDir, 0755, true) && !is_dir($uploadDir)) {
         throw new RuntimeException('Impossible de creer le dossier upload.');
     }
@@ -224,11 +316,17 @@ function save_article_image(mysqli $conn, int $articleId, array $imageFile): voi
         throw new RuntimeException('Impossible d\'enregistrer l\'image.');
     }
 
-    $publicPath = '/uploads/articles/' . $fileName;
-    $typeMediaId = get_or_create_image_type_media_id($conn);
+    $publicPath = '/uploads/articles/' . $subDir . '/' . $fileName;
 
-    $mediaStmt = $conn->prepare('INSERT INTO media (path, Id_type_media) VALUES (?, ?)');
-    $mediaStmt->bind_param('si', $publicPath, $typeMediaId);
+    if (media_table_has_type_column($conn)) {
+        $typeMediaId = get_or_create_image_type_media_id($conn);
+        $mediaStmt = $conn->prepare('INSERT INTO media (path, Id_type_media) VALUES (?, ?)');
+        $mediaStmt->bind_param('si', $publicPath, $typeMediaId);
+    } else {
+        $mediaStmt = $conn->prepare('INSERT INTO media (path) VALUES (?)');
+        $mediaStmt->bind_param('s', $publicPath);
+    }
+
     $mediaStmt->execute();
     $mediaId = (int)$conn->insert_id;
     $mediaStmt->close();
@@ -237,6 +335,19 @@ function save_article_image(mysqli $conn, int $articleId, array $imageFile): voi
     $linkStmt->bind_param('ii', $mediaId, $articleId);
     $linkStmt->execute();
     $linkStmt->close();
+}
+
+function media_table_has_type_column(mysqli $conn): bool
+{
+    $result = $conn->query("SHOW COLUMNS FROM media LIKE 'Id_type_media'");
+    if ($result === false) {
+        return false;
+    }
+
+    $hasColumn = $result->num_rows > 0;
+    $result->free();
+
+    return $hasColumn;
 }
 
 function get_or_create_image_type_media_id(mysqli $conn): int
