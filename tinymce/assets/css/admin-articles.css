@@ -41,6 +41,24 @@ body {
   color: #fff;
 }
 
+.category-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 760px;
+}
+
+.category-table th,
+.category-table td {
+  border: 1px solid #d7e1ee;
+  padding: 8px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.category-table thead th {
+  background: #edf3fc;
+}
+
 .card {
   margin-top: 20px;
   background: #fff;
