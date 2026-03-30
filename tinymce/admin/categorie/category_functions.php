@@ -52,11 +52,11 @@ function fetch_category_by_id(int $categoryId): ?array
     return $row;
 }
 
-function create_category(string $name, string $description, ?string $slugInput = null): int
+function create_category(string $name, string $description): int
 {
     $name = trim($name);
     $description = trim($description);
-    $slug = build_category_slug($slugInput !== null && trim($slugInput) !== '' ? $slugInput : $name);
+    $slug = build_category_slug($name);
 
     if ($name === '') {
         throw new InvalidArgumentException('Le nom de la categorie est obligatoire.');
@@ -74,7 +74,7 @@ function create_category(string $name, string $description, ?string $slugInput =
     return $id;
 }
 
-function update_category(int $categoryId, string $name, string $description, ?string $slugInput = null): void
+function update_category(int $categoryId, string $name, string $description): void
 {
     if ($categoryId <= 0) {
         throw new InvalidArgumentException('Categorie invalide.');
@@ -82,7 +82,7 @@ function update_category(int $categoryId, string $name, string $description, ?st
 
     $name = trim($name);
     $description = trim($description);
-    $slug = build_category_slug($slugInput !== null && trim($slugInput) !== '' ? $slugInput : $name);
+    $slug = build_category_slug($name);
 
     if ($name === '') {
         throw new InvalidArgumentException('Le nom de la categorie est obligatoire.');

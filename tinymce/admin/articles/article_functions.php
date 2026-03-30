@@ -33,6 +33,29 @@ function fetch_admin_articles(int $limit = 50): array
     return $articles;
 }
 
+function fetch_available_categories(): array
+{
+    $items = [];
+
+    $conn = db_connect();
+    $stmt = $conn->prepare(
+        'SELECT Id_categorie, name
+         FROM categorie
+         ORDER BY name ASC, Id_categorie DESC'
+    );
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    while ($row = $result->fetch_assoc()) {
+        $items[] = $row;
+    }
+
+    $stmt->close();
+    $conn->close();
+
+    return $items;
+}
+
 function fetch_admin_article_by_id(int $articleId): ?array
 {
     if ($articleId <= 0) {
@@ -86,7 +109,7 @@ function fetch_article_images(int $articleId): array
     return $images;
 }
 
-function create_article(string $titre, string $contenu, string $auteur, ?string $dateEvenement): int
+function create_article(string $titre, string $contenu, string $auteur, ?string $dateEvenement, array $categoryIds = []): int
 {
     $conn = db_connect();
     $conn->begin_transaction();
@@ -107,6 +130,7 @@ function create_article(string $titre, string $contenu, string $auteur, ?string 
         $stmt->close();
 
         link_article_images_from_content($conn, $id, $rawContenu);
+        link_article_categories($conn, $id, $categoryIds);
 
         $conn->commit();
         $conn->close();
@@ -117,6 +141,54 @@ function create_article(string $titre, string $contenu, string $auteur, ?string 
         $conn->close();
         throw $e;
     }
+}
+
+function link_article_categories(mysqli $conn, int $articleId, array $categoryIds): void
+{
+    if ($articleId <= 0 || !$categoryIds) {
+        return;
+    }
+
+    $uniqueCategoryIds = [];
+    foreach ($categoryIds as $categoryId) {
+        $id = (int)$categoryId;
+        if ($id > 0) {
+            $uniqueCategoryIds[$id] = true;
+        }
+    }
+
+    if (!$uniqueCategoryIds) {
+        return;
+    }
+
+    $categoryExistsStmt = $conn->prepare('SELECT 1 FROM categorie WHERE Id_categorie = ? LIMIT 1');
+    $linkExistsStmt = $conn->prepare('SELECT 1 FROM categorie_article WHERE Id_categorie = ? AND Id_article = ? LIMIT 1');
+    $insertLinkStmt = $conn->prepare('INSERT INTO categorie_article (Id_categorie, Id_article) VALUES (?, ?)');
+
+    foreach (array_keys($uniqueCategoryIds) as $categoryId) {
+        $categoryExistsStmt->bind_param('i', $categoryId);
+        $categoryExistsStmt->execute();
+        $categoryExists = $categoryExistsStmt->get_result()->fetch_assoc();
+
+        if (!$categoryExists) {
+            continue;
+        }
+
+        $linkExistsStmt->bind_param('ii', $categoryId, $articleId);
+        $linkExistsStmt->execute();
+        $linkExists = $linkExistsStmt->get_result()->fetch_assoc();
+
+        if ($linkExists) {
+            continue;
+        }
+
+        $insertLinkStmt->bind_param('ii', $categoryId, $articleId);
+        $insertLinkStmt->execute();
+    }
+
+    $categoryExistsStmt->close();
+    $linkExistsStmt->close();
+    $insertLinkStmt->close();
 }
 
 function update_article(int $articleId, string $titre, string $contenu, string $auteur, ?string $dateEvenement): void
