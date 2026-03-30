@@ -6,6 +6,7 @@ require_once __DIR__ . '/article_functions.php';
 $articles = [];
 $error = '';
 $created = isset($_GET['created']) && $_GET['created'] === '1';
+$updated = isset($_GET['updated']) && $_GET['updated'] === '1';
 
 try {
     $articles = fetch_admin_articles();
@@ -68,6 +69,10 @@ function render_article_title_html(array $article): string
         <div class="success">Article ajoute avec succes.</div>
       <?php endif; ?>
 
+      <?php if ($updated): ?>
+        <div class="success">Article modifie avec succes.</div>
+      <?php endif; ?>
+
       <?php if ($error !== ''): ?>
         <div class="error">Erreur base de donnees: <?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></div>
       <?php elseif (count($articles) === 0): ?>
@@ -88,6 +93,9 @@ function render_article_title_html(array $article): string
                 | Auteur: <?= htmlspecialchars((string)($article['auteur'] ?: '-'), ENT_QUOTES, 'UTF-8') ?>
                 | Date evenement: <?= htmlspecialchars((string)($article['date_evenement'] ?: '-'), ENT_QUOTES, 'UTF-8') ?>
                 | Maj: <?= htmlspecialchars((string)($article['updated_at'] ?: $article['created_at'] ?: '-'), ENT_QUOTES, 'UTF-8') ?>
+              </div>
+              <div class="actions" style="margin-top: 8px;">
+                <a class="btn" href="/admin/articles/create.php?id=<?= (int)$article['Id_article'] ?>">Modifier</a>
               </div>
             </li>
           <?php endforeach; ?>

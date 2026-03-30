@@ -23,6 +23,8 @@ $conn = null;
 
 try {
     $conn = db_connect();
+    $articleId = max(0, (int)($_REQUEST['article_id'] ?? 0));
+    $mode = (string)($_REQUEST['mode'] ?? '');
 
     if (($imageFile['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
         throw new RuntimeException('Upload image invalide.');
@@ -53,9 +55,12 @@ try {
     }
 
     $ext = $allowedMimeToExt[$mime];
-    $fileName = 'mce-' . date('YmdHis') . '-' . bin2hex(random_bytes(6)) . '.' . $ext;
+    $subDir = ($mode === 'modif' && $articleId > 0)
+        ? ('modif/article-' . $articleId)
+        : ('editor-temp/' . date('Y-m'));
+    $fileName = ($articleId > 0 ? 'article-' . $articleId : 'mce') . '-' . date('YmdHis') . '-' . bin2hex(random_bytes(6)) . '.' . $ext;
 
-    $uploadDir = dirname(__DIR__, 2) . '/uploads/articles';
+    $uploadDir = dirname(__DIR__, 2) . '/uploads/articles/' . $subDir;
     if (!is_dir($uploadDir) && !mkdir($uploadDir, 0755, true) && !is_dir($uploadDir)) {
         throw new RuntimeException('Impossible de creer le dossier upload.');
     }
@@ -65,7 +70,7 @@ try {
         throw new RuntimeException('Impossible d\'enregistrer l\'image.');
     }
 
-    $publicPath = '/uploads/articles/' . $fileName;
+    $publicPath = '/uploads/articles/' . $subDir . '/' . $fileName;
 
     if (media_table_has_type_column($conn)) {
         $typeMediaId = get_or_create_image_type_media_id($conn);
