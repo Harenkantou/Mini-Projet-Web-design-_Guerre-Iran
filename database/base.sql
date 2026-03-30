@@ -1,6 +1,6 @@
-CREATE DATABASE IF NOT EXISTS guerre_db;
+CREATE DATABASE IF NOT EXISTS mini_projet_db;
 
-use guerre_db;
+use mini_projet_db;
 
 
 CREATE TABLE role(
