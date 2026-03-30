@@ -1,6 +1,6 @@
-CREATE DATABASE IF NOT EXISTS mini_projet_db;
+CREATE DATABASE IF NOT EXISTS mini_projet;
 
-use mini_projet_db;
+USE mini_projet;
 
 
 CREATE TABLE role(
@@ -48,11 +48,21 @@ CREATE TABLE users(
    Id_users INT AUTO_INCREMENT,
    nom VARCHAR(50) ,
    prenom VARCHAR(50) ,
-   email VARCHAR(50) ,
-   mot_de_passe VARCHAR(50) ,
+   email VARCHAR(100) ,
+   mot_de_passe VARCHAR(255) ,
    Id_role INT NOT NULL,
    PRIMARY KEY(Id_users),
+   UNIQUE KEY uk_users_email (email),
    FOREIGN KEY(Id_role) REFERENCES role(Id_role)
+);
+
+CREATE TABLE documents(
+   id INT AUTO_INCREMENT,
+   title VARCHAR(255) NOT NULL,
+   content LONGTEXT,
+   created_at DATETIME NOT NULL,
+   updated_at DATETIME NOT NULL,
+   PRIMARY KEY(id)
 );
 
 CREATE TABLE media(
@@ -71,3 +81,13 @@ CREATE TABLE media_article(
    FOREIGN KEY(Id_media) REFERENCES media(Id_media),
    FOREIGN KEY(Id_article) REFERENCES article(Id_article)
 );
+
+INSERT INTO role (libelle)
+SELECT 'admin'
+WHERE NOT EXISTS (SELECT 1 FROM role WHERE libelle = 'admin');
+
+INSERT INTO users (nom, prenom, email, mot_de_passe, Id_role)
+SELECT 'Admin', 'Systeme', 'admin@local.dev', 'admin123', Id_role
+FROM role
+WHERE libelle = 'admin'
+   AND NOT EXISTS (SELECT 1 FROM users WHERE email = 'admin@local.dev');
