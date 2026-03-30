@@ -3,7 +3,7 @@ session_start();
 require_once __DIR__ . '/auth_functions.php';
 
 if (isset($_SESSION['user'])) {
-    header('Location: /backoffice.php');
+  header('Location: /admin/articles/index.php');
     exit();
 }
 
@@ -17,9 +17,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Veuillez remplir email et mot de passe.';
     } else {
         try {
-        if (login_user($email, $password)) {
-          header('Location: /backoffice.php');
-          exit();
+            if (login_user($email, $password)) {
+                header('Location: /admin/articles/index.php');
+                exit();
             }
 
             $error = 'Identifiants invalides.';

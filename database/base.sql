@@ -38,11 +38,7 @@ CREATE TABLE categorie_article(
    FOREIGN KEY(Id_article) REFERENCES article(Id_article)
 );
 
-CREATE TABLE type_media(
-   Id_type_media INT AUTO_INCREMENT,
-   libelle VARCHAR(50) ,
-   PRIMARY KEY(Id_type_media)
-);
+
 
 CREATE TABLE users(
    Id_users INT AUTO_INCREMENT,
@@ -68,9 +64,7 @@ CREATE TABLE documents(
 CREATE TABLE media(
    Id_media INT AUTO_INCREMENT,
    path TEXT,
-   Id_type_media INT NOT NULL,
-   PRIMARY KEY(Id_media),
-   FOREIGN KEY(Id_type_media) REFERENCES type_media(Id_type_media)
+   PRIMARY KEY(Id_media)
 );
 
 CREATE TABLE media_article(
