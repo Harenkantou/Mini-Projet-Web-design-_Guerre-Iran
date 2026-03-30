@@ -93,16 +93,3 @@ try {
         $conn->close();
     }
 }
-
-function media_table_has_type_column(mysqli $conn): bool
-{
-    $result = $conn->query("SHOW COLUMNS FROM media LIKE 'Id_type_media'");
-    if ($result === false) {
-        return false;
-    }
-
-    $hasColumn = $result->num_rows > 0;
-    $result->free();
-
-    return $hasColumn;
-}
