@@ -1,0 +1,67 @@
+body {
+  font-family: Tahoma, sans-serif;
+  background: linear-gradient(135deg, #f0f4f8, #dbe7f3);
+  min-height: 100vh;
+  margin: 0;
+  display: grid;
+  place-items: center;
+}
+
+.card {
+  width: min(420px, 92vw);
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.12);
+  padding: 24px;
+}
+
+h1 {
+  margin-top: 0;
+}
+
+label {
+  display: block;
+  margin: 10px 0 6px;
+  font-weight: 600;
+}
+
+input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #c7d2de;
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+
+button {
+  margin-top: 16px;
+  width: 100%;
+  padding: 11px;
+  border: 0;
+  border-radius: 8px;
+  background: #174ea6;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.error {
+  margin-top: 10px;
+  background: #fde7e9;
+  color: #6e0012;
+  border: 1px solid #f5c2c7;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.hint {
+  margin-top: 14px;
+  font-size: 13px;
+  color: #44566c;
+}
+
+.back {
+  margin-top: 12px;
+  text-align: center;
+  font-size: 14px;
+}

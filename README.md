@@ -31,7 +31,23 @@ Commandes Docker Compose directes
 Acces local
 
 - Site/editeur: http://localhost:8000
+- BackOffice (connexion): http://localhost:8000/login.php
+- BackOffice (editeur protege): http://localhost:8000/backoffice.php
 - Adminer: http://localhost:8081
 - MySQL: 127.0.0.1:3307
  
-docker exec -it mini_projet_db mysql -u root -proot mini_projet 
+Connexion SQL depuis Docker
+
+- Ouvrir MySQL en root:
+	docker exec -it mini_projet_db mysql -u root -proot mini_projet
+
+- Compte BackOffice de demo:
+	email: admin@local.dev
+	mot de passe: admin123
+
+Important apres modification du schema SQL
+
+- Le script database/base.sql est execute seulement au premier demarrage du volume MySQL.
+- Pour reappliquer le schema et les donnees de demo:
+	docker compose down -v
+	docker compose up --build -d
