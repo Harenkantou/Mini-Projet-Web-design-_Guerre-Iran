@@ -58,6 +58,7 @@ function render_article_title_html(array $article): string
       </div>
       <div class="actions">
         <a class="btn primary" href="/admin/articles/create.php">Ajouter un nouvel article</a>
+        <a class="btn" href="/admin/categorie/index.php">Gestion categorie</a>
         <a class="btn" href="/">Voir le FrontOffice</a>
         <a class="btn" href="/auth/logout.php">Deconnexion</a>
       </div>
