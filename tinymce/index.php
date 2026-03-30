@@ -101,7 +101,7 @@ $isAdmin = isset($_SESSION['user']);
       <h1>FrontOffice - Liste des articles</h1>
       <div>
         <?php if ($isAdmin): ?>
-          <a class="btn" href="/backoffice.php">Espace admin</a>
+          <a class="btn" href="/admin/articles/index.php">Espace admin</a>
           <a class="btn primary" href="/auth/logout.php">Deconnexion</a>
         <?php else: ?>
           <a class="btn primary" href="/auth/login.php">Admin</a>
