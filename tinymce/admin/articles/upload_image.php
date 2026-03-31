@@ -71,11 +71,23 @@ try {
     }
 
     $publicPath = '/uploads/articles/' . $subDir . '/' . $fileName;
+    $altTextInput = (string)($_REQUEST['alt_text'] ?? $_REQUEST['title'] ?? $_REQUEST['description'] ?? '');
+    $altText = build_media_alt_text($altTextInput, (string)($imageFile['name'] ?? ''), $articleId);
 
-    if (media_table_has_type_column($conn)) {
+    $hasTypeColumn = media_table_has_type_column($conn);
+    $hasAltTextColumn = media_table_has_alt_text_column($conn);
+
+    if ($hasTypeColumn && $hasAltTextColumn) {
+        $typeMediaId = get_or_create_image_type_media_id($conn);
+        $mediaStmt = $conn->prepare('INSERT INTO media (path, alt_text, Id_type_media) VALUES (?, ?, ?)');
+        $mediaStmt->bind_param('ssi', $publicPath, $altText, $typeMediaId);
+    } elseif ($hasTypeColumn) {
         $typeMediaId = get_or_create_image_type_media_id($conn);
         $mediaStmt = $conn->prepare('INSERT INTO media (path, Id_type_media) VALUES (?, ?)');
         $mediaStmt->bind_param('si', $publicPath, $typeMediaId);
+    } elseif ($hasAltTextColumn) {
+        $mediaStmt = $conn->prepare('INSERT INTO media (path, alt_text) VALUES (?, ?)');
+        $mediaStmt->bind_param('ss', $publicPath, $altText);
     } else {
         $mediaStmt = $conn->prepare('INSERT INTO media (path) VALUES (?)');
         $mediaStmt->bind_param('s', $publicPath);

@@ -36,7 +36,7 @@ try {
     // Requête articles
     if (!empty($selectedCategory) && isset($selectedCategory['Id_categorie'])) {
         $categoryId = (int)$selectedCategory['Id_categorie'];
-        $stmt = $conn->prepare('SELECT a.Id_article, a.titre, a.contenu, a.auteur, a.created_at
+        $stmt = $conn->prepare('SELECT a.Id_article, a.slug, a.titre, a.contenu, a.auteur, a.created_at
                                 FROM article a
                                 INNER JOIN categorie_article ca ON ca.Id_article = a.Id_article
                                 WHERE ca.Id_categorie = ?
@@ -50,7 +50,7 @@ try {
         }
         $stmt->close();
     } else {
-        $sql = 'SELECT Id_article, titre, contenu, auteur, created_at FROM article ORDER BY COALESCE(updated_at, created_at) DESC LIMIT 20';
+        $sql = 'SELECT Id_article, slug, titre, contenu, auteur, created_at FROM article ORDER BY COALESCE(updated_at, created_at) DESC LIMIT 20';
         $result = $conn->query($sql);
         if ($result) {
             while ($row = $result->fetch_assoc()) {
@@ -66,13 +66,48 @@ try {
 
 $isAdmin = isset($_SESSION['user']);
 $selectedCategoryName = $selectedCategory['name'] ?? '';
+
+function article_preview_text(string $html, int $maxLen = 220): string
+{
+  $text = html_entity_decode(strip_tags($html), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+  $text = trim(preg_replace('/\s+/', ' ', $text) ?? '');
+
+  if ($text === '') {
+    return '';
+  }
+
+  if (mb_strlen($text, 'UTF-8') <= $maxLen) {
+    return $text;
+  }
+
+  return rtrim(mb_substr($text, 0, $maxLen, 'UTF-8')) . '...';
+}
+
+function article_list_title_html(string $titleHtml): string
+{
+  $titleHtml = trim($titleHtml);
+  if ($titleHtml === '') {
+    return 'Sans titre';
+  }
+
+  $allowed = '<h1><h2><h3><h4><h5><h6><p><strong><em><span><u><b><i><sup><sub><small><br>';
+  $safe = strip_tags($titleHtml, $allowed);
+  $safe = preg_replace('/\s+/', ' ', $safe) ?? '';
+
+  return trim($safe) !== '' ? trim($safe) : 'Sans titre';
+}
+
+function article_url_from_slug(string $slug): string
+{
+  return '/article/' . rawurlencode($slug);
+}
 ?>
 <!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FrontOffice - Infos Guerre Iran/Israel</title>
+  <title>FrontOffice - Infos Guerre Iran/Israel </title>
   <style>
     body { margin:0; font-family:Verdana, sans-serif; background:#f5f7fb; color:#1c2940; }
     .wrap { max-width:900px; margin:0 auto; padding:24px; }
@@ -96,7 +131,7 @@ $selectedCategoryName = $selectedCategory['name'] ?? '';
 <body>
   <div class="wrap">
     <div class="header">
-      <h1>FrontOffice - Liste des articles</h1>
+      <h1>FrontOffice - Liste des articles </h1>
       <div>
         <?php if ($isAdmin): ?>
           <a class="btn" href="/admin/articles/index.php">Espace admin</a>
@@ -108,7 +143,7 @@ $selectedCategoryName = $selectedCategory['name'] ?? '';
     </div>
 
     <div class="category-menu">
-      <a class="btn category<?= $selectedCategorySlug === '' ? ' active' : '' ?>" href="/">Tous</a>
+      <a class="btn category<?= $selectedCategorySlug === '' ? ' active' : '' ?>" href="/accueil">Tous</a>
       <?php foreach ($categories as $category): ?>
         <a class="btn category<?= $selectedCategorySlug === $category['slug'] ? ' active' : '' ?>"
            href="?category=<?= urlencode($category['slug']) ?>">
@@ -135,12 +170,23 @@ $selectedCategoryName = $selectedCategory['name'] ?? '';
         <ul>
           <?php foreach ($articles as $article): ?>
             <li>
-              <div class="article-title"><?= $article['titre'] ?: 'Sans titre' ?></div>
+              <?php
+                $slug = trim((string)($article['slug'] ?? ''));
+                $viewUrl = $slug !== ''
+                    ? article_url_from_slug($slug)
+                    : '#';
+              ?>
+              <div class="article-title"><?= article_list_title_html((string)($article['titre'] ?? '')) ?></div>
               <div class="muted">
                 Auteur: <?= htmlspecialchars($article['auteur'] ?: 'Inconnu', ENT_QUOTES, 'UTF-8') ?>
                 | Date: <?= htmlspecialchars((string)($article['created_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?>
               </div>
-              <div class="article-content"><?= $article['contenu'] ?? '' ?></div>
+              <div class="article-content"><?= htmlspecialchars(article_preview_text((string)($article['contenu'] ?? '')), ENT_QUOTES, 'UTF-8') ?></div>
+              <?php if ($slug !== ''): ?>
+                <div style="margin-top:8px;">
+                  <a class="btn" href="<?= htmlspecialchars($viewUrl, ENT_QUOTES, 'UTF-8') ?>">Voir plus</a>
+                </div>
+              <?php endif; ?>
             </li>
           <?php endforeach; ?>
         </ul>

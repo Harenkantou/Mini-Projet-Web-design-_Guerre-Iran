@@ -1,4 +1,4 @@
-Mini Projet Web Design - Docker
+Mini Projet Web Design - Docker (Apache + .htaccess)
 
 Commandes rapides (PowerShell)
 
@@ -31,6 +31,7 @@ Commandes Docker Compose directes
 Acces local
 
 - Site/editeur: http://localhost:8000
+- URL article SEO (rewriting): http://localhost:8000/article/{slug}
 - BackOffice (connexion): http://localhost:8000/login.php
 - BackOffice (editeur protege): http://localhost:8000/backoffice.php
 - Adminer: http://localhost:8081
@@ -51,3 +52,8 @@ Important apres modification du schema SQL
 - Pour reappliquer le schema et les donnees de demo:
 	docker compose down -v
 	docker compose up --build -d
+
+Notes techniques
+
+- Le projet tourne sur Apache (pas Nginx) afin de supporter le rewriting via `tinymce/.htaccess`.
+- Le module `mod_rewrite` est activé dans l'image Docker.

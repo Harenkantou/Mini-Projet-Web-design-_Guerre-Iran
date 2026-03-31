@@ -7,17 +7,22 @@ function fetch_admin_articles(int $limit = 50): array
     $articles = [];
 
     $conn = db_connect();
+    $hasAltText = media_table_has_alt_text_column($conn);
+    $imageAltField = $hasAltText
+        ? 'm.alt_text AS image_alt_text'
+        : "'' AS image_alt_text";
+
     $stmt = $conn->prepare(
-          'SELECT a.Id_article, a.titre, a.contenu, a.auteur, a.date_evenement, a.created_at, a.updated_at, m.path AS image_path
-            FROM article a
-            LEFT JOIN (
-                SELECT Id_article, MIN(Id_media) AS first_media_id
-                FROM media_article
-                GROUP BY Id_article
-            ) am ON am.Id_article = a.Id_article
-            LEFT JOIN media m ON m.Id_media = am.first_media_id
-            ORDER BY COALESCE(a.updated_at, a.created_at) DESC
-            LIMIT ?'
+        'SELECT a.Id_article, a.slug, a.titre, a.contenu, a.auteur, a.date_evenement, a.created_at, a.updated_at, m.path AS image_path, ' . $imageAltField . '
+         FROM article a
+         LEFT JOIN (
+             SELECT Id_article, MIN(Id_media) AS first_media_id
+             FROM media_article
+             GROUP BY Id_article
+         ) am ON am.Id_article = a.Id_article
+         LEFT JOIN media m ON m.Id_media = am.first_media_id
+         ORDER BY COALESCE(a.updated_at, a.created_at) DESC
+         LIMIT ?'
     );
     $stmt->bind_param('i', $limit);
     $stmt->execute();
@@ -88,8 +93,13 @@ function fetch_article_images(int $articleId): array
 
     $images = [];
     $conn = db_connect();
+    $hasAltText = media_table_has_alt_text_column($conn);
+    $imageAltField = $hasAltText
+        ? 'm.alt_text'
+        : "'' AS alt_text";
+
     $stmt = $conn->prepare(
-        'SELECT m.Id_media, m.path
+        'SELECT m.Id_media, m.path, ' . $imageAltField . '
          FROM media_article ma
          INNER JOIN media m ON m.Id_media = ma.Id_media
          WHERE ma.Id_article = ?
@@ -340,7 +350,7 @@ function build_slug(string $title): string
     return $slug . '-' . date('YmdHis');
 }
 
-function save_article_image(mysqli $conn, int $articleId, array $imageFile): void
+function save_article_image(mysqli $conn, int $articleId, array $imageFile, ?string $altTextInput = null): void
 {
     if ($articleId <= 0) {
         throw new InvalidArgumentException('Id article invalide.');
@@ -389,11 +399,22 @@ function save_article_image(mysqli $conn, int $articleId, array $imageFile): voi
     }
 
     $publicPath = '/uploads/articles/' . $subDir . '/' . $fileName;
+    $altText = build_media_alt_text($altTextInput, (string)($imageFile['name'] ?? ''), $articleId);
 
-    if (media_table_has_type_column($conn)) {
+    $hasTypeColumn = media_table_has_type_column($conn);
+    $hasAltTextColumn = media_table_has_alt_text_column($conn);
+
+    if ($hasTypeColumn && $hasAltTextColumn) {
+        $typeMediaId = get_or_create_image_type_media_id($conn);
+        $mediaStmt = $conn->prepare('INSERT INTO media (path, alt_text, Id_type_media) VALUES (?, ?, ?)');
+        $mediaStmt->bind_param('ssi', $publicPath, $altText, $typeMediaId);
+    } elseif ($hasTypeColumn) {
         $typeMediaId = get_or_create_image_type_media_id($conn);
         $mediaStmt = $conn->prepare('INSERT INTO media (path, Id_type_media) VALUES (?, ?)');
         $mediaStmt->bind_param('si', $publicPath, $typeMediaId);
+    } elseif ($hasAltTextColumn) {
+        $mediaStmt = $conn->prepare('INSERT INTO media (path, alt_text) VALUES (?, ?)');
+        $mediaStmt->bind_param('ss', $publicPath, $altText);
     } else {
         $mediaStmt = $conn->prepare('INSERT INTO media (path) VALUES (?)');
         $mediaStmt->bind_param('s', $publicPath);
@@ -420,6 +441,40 @@ function media_table_has_type_column(mysqli $conn): bool
     $result->free();
 
     return $hasColumn;
+}
+
+function media_table_has_alt_text_column(mysqli $conn): bool
+{
+    $result = $conn->query("SHOW COLUMNS FROM media LIKE 'alt_text'");
+    if ($result === false) {
+        return false;
+    }
+
+    $hasColumn = $result->num_rows > 0;
+    $result->free();
+
+    return $hasColumn;
+}
+
+function build_media_alt_text(?string $altTextInput, string $originalFileName, int $articleId): string
+{
+    $candidate = (string)($altTextInput ?? '');
+
+    if (trim($candidate) === '') {
+        $baseName = pathinfo($originalFileName, PATHINFO_FILENAME);
+        $candidate = $baseName !== '' ? $baseName : ('image-article-' . max(0, $articleId));
+    }
+
+    $candidate = html_entity_decode($candidate, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    $candidate = strip_tags($candidate);
+    $candidate = preg_replace('/\s+/', ' ', $candidate) ?? '';
+    $candidate = trim($candidate);
+
+    if ($candidate === '') {
+        $candidate = 'Image article';
+    }
+
+    return mb_substr($candidate, 0, 255, 'UTF-8');
 }
 
 function get_or_create_image_type_media_id(mysqli $conn): int

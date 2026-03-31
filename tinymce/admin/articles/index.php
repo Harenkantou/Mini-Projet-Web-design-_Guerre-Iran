@@ -81,15 +81,26 @@ $activePage = 'articles-list';
       <ul class="article-list">
         <?php foreach ($articles as $article): ?>
           <li class="article-item">
+            <?php
+              $slug = trim((string)($article['slug'] ?? ''));
+              $viewUrl = $slug !== ''
+              ? '/article/' . rawurlencode($slug)
+                  : '';
+            ?>
             <?php if (!empty($article['image_path'])): ?>
               <div class="article-thumb-wrap">
+                <?php $imageAlt = trim((string)($article['image_alt_text'] ?? '')); ?>
                 <img
                   class="article-thumb"
                   src="<?= htmlspecialchars((string)$article['image_path'], ENT_QUOTES, 'UTF-8') ?>"
-                  alt="Image article <?= (int)$article['Id_article'] ?>"
+                  alt="<?= htmlspecialchars($imageAlt !== '' ? $imageAlt : ('Image article ' . (int)$article['Id_article']), ENT_QUOTES, 'UTF-8') ?>"
                 >
                 <div class="compact-meta">
-                  <?= htmlspecialchars((string)$article['image_path'], ENT_QUOTES, 'UTF-8') ?>
+                  <?php if ($viewUrl !== ''): ?>
+                    <a href="<?= htmlspecialchars($viewUrl, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener">Voir plus</a>
+                  <?php else: ?>
+                    -
+                  <?php endif; ?>
                 </div>
               </div>
             <?php endif; ?>
