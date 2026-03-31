@@ -7,9 +7,15 @@ $articles = [];
 $error    = '';
 $created  = isset($_GET['created']) && $_GET['created'] === '1';
 $updated  = isset($_GET['updated']) && $_GET['updated'] === '1';
+$searchKeyword = trim((string)($_GET['q'] ?? ''));
+$selectedEventDate = trim((string)($_GET['date'] ?? ''));
+
+if ($selectedEventDate !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $selectedEventDate)) {
+  $selectedEventDate = '';
+}
 
 try {
-    $articles = fetch_admin_articles();
+  $articles = fetch_admin_articles(50, $searchKeyword, $selectedEventDate);
 } catch (Throwable $e) {
     $error = $e->getMessage();
 }
@@ -73,6 +79,32 @@ $activePage = 'articles-list';
       <div class="success">Article modifié avec succès.</div>
     <?php endif; ?>
 
+    <form class="form-grid" method="get" action="/admin/articles/" style="margin-bottom:16px;">
+      <div>
+        <label for="q">Recherche (mot-clé)</label>
+        <input
+          type="text"
+          id="q"
+          name="q"
+          placeholder="Titre, contenu, auteur, slug"
+          value="<?= htmlspecialchars($searchKeyword, ENT_QUOTES, 'UTF-8') ?>"
+        >
+      </div>
+      <div>
+        <label for="date">Date d'événement</label>
+        <input
+          type="date"
+          id="date"
+          name="date"
+          value="<?= htmlspecialchars($selectedEventDate, ENT_QUOTES, 'UTF-8') ?>"
+        >
+      </div>
+      <div class="actions full" style="margin-top:0; padding-top:0; border-top:0;">
+        <button class="btn primary" type="submit">Filtrer</button>
+        <a class="btn" href="/admin/articles/">Réinitialiser</a>
+      </div>
+    </form>
+
     <?php if ($error !== ''): ?>
       <div class="error">Erreur base de données&nbsp;: <?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></div>
     <?php elseif (count($articles) === 0): ?>
@@ -116,6 +148,9 @@ $activePage = 'articles-list';
             </div>
 
             <div class="article-actions-col">
+              <?php if ($viewUrl !== ''): ?>
+                <a class="btn" href="<?= htmlspecialchars($viewUrl, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener">Voir plus</a>
+              <?php endif; ?>
               <a class="btn primary" href="/admin/articles/create.php?id=<?= (int)$article['Id_article'] ?>">Modifier</a>
             </div>
           </li>
