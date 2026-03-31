@@ -2,12 +2,28 @@
 
 require_once __DIR__ . '/../../db.php';
 
-function fetch_admin_articles(int $limit = 50, string $keyword = '', string $eventDate = ''): array
+function bind_stmt_params(mysqli_stmt $stmt, string $types, array &$values): void
+{
+    if ($types === '') {
+        return;
+    }
+
+    $refs = [];
+    foreach ($values as $key => &$value) {
+        $refs[$key] = &$value;
+    }
+
+    array_unshift($refs, $types);
+    call_user_func_array([$stmt, 'bind_param'], $refs);
+}
+
+function fetch_admin_articles(int $limit = 50, string $keyword = '', string $eventDate = '', string $categorySlug = ''): array
 {
     $articles = [];
 
     $keyword = trim($keyword);
     $eventDate = trim($eventDate);
+    $categorySlug = trim($categorySlug);
     if ($eventDate !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $eventDate)) {
         $eventDate = '';
     }
@@ -28,44 +44,49 @@ function fetch_admin_articles(int $limit = 50, string $keyword = '', string $eve
          ) am ON am.Id_article = a.Id_article
          LEFT JOIN media m ON m.Id_media = am.first_media_id';
 
-    $hasKeyword = $keyword !== '';
-    $hasEventDate = $eventDate !== '';
+    $where = [];
+    $types = '';
+    $params = [];
 
-    if ($hasKeyword && $hasEventDate) {
-        $stmt = $conn->prepare(
-            $sql . '
-             WHERE a.date_evenement = ?
-               AND (a.titre LIKE ? OR a.contenu LIKE ? OR a.auteur LIKE ? OR a.slug LIKE ?)
-             ORDER BY COALESCE(a.updated_at, a.created_at) DESC
-             LIMIT ?'
-        );
-        $like = '%' . $keyword . '%';
-        $stmt->bind_param('sssssi', $eventDate, $like, $like, $like, $like, $limit);
-    } elseif ($hasKeyword) {
-        $stmt = $conn->prepare(
-            $sql . '
-             WHERE (a.titre LIKE ? OR a.contenu LIKE ? OR a.auteur LIKE ? OR a.slug LIKE ?)
-             ORDER BY COALESCE(a.updated_at, a.created_at) DESC
-             LIMIT ?'
-        );
-        $like = '%' . $keyword . '%';
-        $stmt->bind_param('ssssi', $like, $like, $like, $like, $limit);
-    } elseif ($hasEventDate) {
-        $stmt = $conn->prepare(
-            $sql . '
-             WHERE a.date_evenement = ?
-             ORDER BY COALESCE(a.updated_at, a.created_at) DESC
-             LIMIT ?'
-        );
-        $stmt->bind_param('si', $eventDate, $limit);
-    } else {
-        $stmt = $conn->prepare(
-            $sql . '
-             ORDER BY COALESCE(a.updated_at, a.created_at) DESC
-             LIMIT ?'
-        );
-        $stmt->bind_param('i', $limit);
+    if ($categorySlug !== '') {
+        $where[] =
+            'EXISTS (
+                SELECT 1
+                FROM categorie_article ca
+                INNER JOIN categorie c ON c.Id_categorie = ca.Id_categorie
+                WHERE ca.Id_article = a.Id_article
+                  AND c.slug = ?
+            )';
+        $types .= 's';
+        $params[] = $categorySlug;
     }
+
+    if ($eventDate !== '') {
+        $where[] = 'a.date_evenement = ?';
+        $types .= 's';
+        $params[] = $eventDate;
+    }
+
+    if ($keyword !== '') {
+        $where[] = '(a.titre LIKE ? OR a.contenu LIKE ? OR a.auteur LIKE ? OR a.slug LIKE ?)';
+        $like = '%' . $keyword . '%';
+        $types .= 'ssss';
+        $params[] = $like;
+        $params[] = $like;
+        $params[] = $like;
+        $params[] = $like;
+    }
+
+    $query = $sql;
+    if ($where) {
+        $query .= ' WHERE ' . implode(' AND ', $where);
+    }
+    $query .= ' ORDER BY COALESCE(a.updated_at, a.created_at) DESC LIMIT ?';
+    $types .= 'i';
+    $params[] = $limit;
+
+    $stmt = $conn->prepare($query);
+    bind_stmt_params($stmt, $types, $params);
 
     $stmt->execute();
     $result = $stmt->get_result();
@@ -89,6 +110,31 @@ function fetch_available_categories(): array
         'SELECT Id_categorie, name
          FROM categorie
          ORDER BY name ASC, Id_categorie DESC'
+    );
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    while ($row = $result->fetch_assoc()) {
+        $items[] = $row;
+    }
+
+    $stmt->close();
+    $conn->close();
+
+    return $items;
+}
+
+function fetch_admin_categories_menu(): array
+{
+    $items = [];
+
+    $conn = db_connect();
+    $stmt = $conn->prepare(
+        'SELECT c.Id_categorie, c.name, c.slug, COUNT(ca.Id_article) AS article_count
+         FROM categorie c
+         LEFT JOIN categorie_article ca ON ca.Id_categorie = c.Id_categorie
+         GROUP BY c.Id_categorie, c.name, c.slug
+         ORDER BY c.name ASC'
     );
     $stmt->execute();
     $result = $stmt->get_result();

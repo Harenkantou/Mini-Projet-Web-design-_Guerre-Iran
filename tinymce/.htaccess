@@ -9,8 +9,14 @@ RewriteCond %{REQUEST_FILENAME} -f [OR]
 RewriteCond %{REQUEST_FILENAME} -d
 RewriteRule ^ - [L]
 
+# SEO URL: /article/id/{id} -> /article/single.php?id={id}
+RewriteRule ^article/id/([0-9]+)/?$ article/single.php?id=$1 [L,QSA,NC]
+
 # SEO URL: /article/{slug} -> /article/single.php?slug={slug}
 RewriteRule ^article/([^/]+)/?$ article/single.php?slug=$1 [L,QSA,NC]
+
+# SEO URL: /accueil/categorie/{slug} -> /index.php?category={slug}
+RewriteRule ^accueil/categorie/([^/]+)/?$ index.php?category=$1 [L,QSA,NC]
 
 # SEO URL: /accueil -> /index.php
 RewriteRule ^accueil/?$ index.php [L,QSA,NC]

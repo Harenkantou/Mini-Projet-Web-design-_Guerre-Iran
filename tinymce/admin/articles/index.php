@@ -9,15 +9,39 @@ $created  = isset($_GET['created']) && $_GET['created'] === '1';
 $updated  = isset($_GET['updated']) && $_GET['updated'] === '1';
 $searchKeyword = trim((string)($_GET['q'] ?? ''));
 $selectedEventDate = trim((string)($_GET['date'] ?? ''));
+$selectedCategorySlug = trim((string)($_GET['category'] ?? ''));
+$categories = [];
+$selectedCategoryName = '';
 
 if ($selectedEventDate !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $selectedEventDate)) {
   $selectedEventDate = '';
 }
 
 try {
-  $articles = fetch_admin_articles(50, $searchKeyword, $selectedEventDate);
+  $categories = fetch_admin_categories_menu();
+  foreach ($categories as $category) {
+    if ((string)($category['slug'] ?? '') === $selectedCategorySlug) {
+      $selectedCategoryName = (string)($category['name'] ?? '');
+      break;
+    }
+  }
+
+  $articles = fetch_admin_articles(50, $searchKeyword, $selectedEventDate, $selectedCategorySlug);
 } catch (Throwable $e) {
     $error = $e->getMessage();
+}
+
+function admin_articles_url(array $params = []): string
+{
+  $clean = [];
+  foreach ($params as $key => $value) {
+    $value = trim((string)$value);
+    if ($value !== '') {
+      $clean[$key] = $value;
+    }
+  }
+
+  return '/admin/articles/' . ($clean ? ('?' . http_build_query($clean)) : '');
 }
 
 function render_article_title_html(array $article): string
@@ -65,10 +89,9 @@ $activePage = 'articles-list';
 
   <div class="card">
     <div class="card-title">
-      Tous les articles
-      <?php if (count($articles) > 0): ?>
-        <span class="badge" style="margin-left:8px;"><?= count($articles) ?></span>
-      <?php endif; ?>
+      <?= $selectedCategoryName !== ''
+          ? ('Articles dans « ' . htmlspecialchars($selectedCategoryName, ENT_QUOTES, 'UTF-8') . ' »')
+          : 'Tous les articles' ?>
     </div>
 
     <?php if ($created): ?>
@@ -79,7 +102,35 @@ $activePage = 'articles-list';
       <div class="success">Article modifié avec succès.</div>
     <?php endif; ?>
 
+    <?php if (count($categories) > 0): ?>
+      <div style="margin-bottom:14px; display:flex; flex-wrap:wrap; gap:8px;">
+        <a
+          class="btn<?= $selectedCategorySlug === '' ? ' primary' : '' ?>"
+          href="<?= htmlspecialchars(admin_articles_url(['q' => $searchKeyword, 'date' => $selectedEventDate]), ENT_QUOTES, 'UTF-8') ?>"
+        >
+          Toutes les catégories
+        </a>
+        <?php foreach ($categories as $category): ?>
+          <?php
+            $catSlug = trim((string)($category['slug'] ?? ''));
+            $isActiveCategory = $selectedCategorySlug !== '' && $selectedCategorySlug === $catSlug;
+          ?>
+          <?php if ($catSlug !== ''): ?>
+            <a
+              class="btn<?= $isActiveCategory ? ' primary' : '' ?>"
+              href="<?= htmlspecialchars(admin_articles_url(['category' => $catSlug, 'q' => $searchKeyword, 'date' => $selectedEventDate]), ENT_QUOTES, 'UTF-8') ?>"
+            >
+              <?= htmlspecialchars((string)($category['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?>
+            </a>
+          <?php endif; ?>
+        <?php endforeach; ?>
+      </div>
+    <?php endif; ?>
+
     <form class="form-grid" method="get" action="/admin/articles/" style="margin-bottom:16px;">
+      <?php if ($selectedCategorySlug !== ''): ?>
+        <input type="hidden" name="category" value="<?= htmlspecialchars($selectedCategorySlug, ENT_QUOTES, 'UTF-8') ?>">
+      <?php endif; ?>
       <div>
         <label for="q">Recherche (mot-clé)</label>
         <input
@@ -101,7 +152,7 @@ $activePage = 'articles-list';
       </div>
       <div class="actions full" style="margin-top:0; padding-top:0; border-top:0;">
         <button class="btn primary" type="submit">Filtrer</button>
-        <a class="btn" href="/admin/articles/">Réinitialiser</a>
+        <a class="btn" href="<?= htmlspecialchars(admin_articles_url(['category' => $selectedCategorySlug]), ENT_QUOTES, 'UTF-8') ?>">Réinitialiser</a>
       </div>
     </form>
 
@@ -114,10 +165,11 @@ $activePage = 'articles-list';
         <?php foreach ($articles as $article): ?>
           <li class="article-item">
             <?php
+              $articleId = (int)($article['Id_article'] ?? 0);
               $slug = trim((string)($article['slug'] ?? ''));
               $viewUrl = $slug !== ''
-              ? '/article/' . rawurlencode($slug)
-                  : '';
+                  ? '/article/' . rawurlencode($slug)
+                  : '/article/id/' . $articleId;
             ?>
             <?php if (!empty($article['image_path'])): ?>
               <div class="article-thumb-wrap">
@@ -128,11 +180,7 @@ $activePage = 'articles-list';
                   alt="<?= htmlspecialchars($imageAlt !== '' ? $imageAlt : ('Image article ' . (int)$article['Id_article']), ENT_QUOTES, 'UTF-8') ?>"
                 >
                 <div class="compact-meta">
-                  <?php if ($viewUrl !== ''): ?>
-                    <a href="<?= htmlspecialchars($viewUrl, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener">Voir plus</a>
-                  <?php else: ?>
-                    -
-                  <?php endif; ?>
+                  <a href="<?= htmlspecialchars($viewUrl, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener">Voir plus</a>
                 </div>
               </div>
             <?php endif; ?>
@@ -148,9 +196,7 @@ $activePage = 'articles-list';
             </div>
 
             <div class="article-actions-col">
-              <?php if ($viewUrl !== ''): ?>
-                <a class="btn" href="<?= htmlspecialchars($viewUrl, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener">Voir plus</a>
-              <?php endif; ?>
+              <a class="btn" href="<?= htmlspecialchars($viewUrl, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener">Voir plus</a>
               <a class="btn primary" href="/admin/articles/create.php?id=<?= (int)$article['Id_article'] ?>">Modifier</a>
             </div>
           </li>

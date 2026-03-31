@@ -3,26 +3,37 @@ session_start();
 require_once __DIR__ . '/../db.php';
 
 $slug         = trim((string)($_GET['slug'] ?? ''));
+$articleIdParam = (int)($_GET['id'] ?? 0);
 $article      = null;
 $articlePhotos = [];
 $categories   = [];
 $dbError      = '';
 
-if ($slug === '') {
+if ($slug === '' && $articleIdParam <= 0) {
     http_response_code(404);
 }
 
-if ($slug !== '') {
+if ($slug !== '' || $articleIdParam > 0) {
     try {
         $conn = db_connect();
 
-        $stmt = $conn->prepare(
-            'SELECT a.Id_article, a.titre, a.contenu, a.slug, a.auteur, a.created_at, a.updated_at, a.date_evenement
-             FROM article a
-             WHERE a.slug = ?
-             LIMIT 1'
-        );
-        $stmt->bind_param('s', $slug);
+    if ($slug !== '') {
+      $stmt = $conn->prepare(
+        'SELECT a.Id_article, a.titre, a.contenu, a.slug, a.auteur, a.created_at, a.updated_at, a.date_evenement
+         FROM article a
+         WHERE a.slug = ?
+         LIMIT 1'
+      );
+      $stmt->bind_param('s', $slug);
+    } else {
+      $stmt = $conn->prepare(
+        'SELECT a.Id_article, a.titre, a.contenu, a.slug, a.auteur, a.created_at, a.updated_at, a.date_evenement
+         FROM article a
+         WHERE a.Id_article = ?
+         LIMIT 1'
+      );
+      $stmt->bind_param('i', $articleIdParam);
+    }
         $stmt->execute();
         $article = $stmt->get_result()->fetch_assoc() ?: null;
         $stmt->close();
@@ -155,7 +166,7 @@ $activePage = 'front';
     <?php if (count($categories) > 0): ?>
       <div class="single-chips">
         <?php foreach ($categories as $cat): ?>
-          <a class="chip" href="/accueil?category=<?= urlencode((string)($cat['slug'] ?? '')) ?>">
+          <a class="chip" href="/accueil/categorie/<?= rawurlencode((string)($cat['slug'] ?? '')) ?>">
             <?= htmlspecialchars((string)($cat['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?>
           </a>
         <?php endforeach; ?>
