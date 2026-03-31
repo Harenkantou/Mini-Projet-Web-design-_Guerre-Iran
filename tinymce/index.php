@@ -42,9 +42,12 @@ try {
     $keywordLike = '%' . $searchKeyword . '%';
 
     $stmt = $conn->prepare(
-        'SELECT a.Id_article, a.slug, a.titre, a.contenu, a.auteur, a.created_at, a.date_evenement
+        'SELECT a.Id_article, a.slug, a.titre, a.contenu, a.auteur, a.created_at, a.date_evenement,
+                MAX(m.path) AS image_path
          FROM article a
          LEFT JOIN categorie_article ca ON ca.Id_article = a.Id_article
+         LEFT JOIN media_article ma ON ma.Id_article = a.Id_article
+         LEFT JOIN media m ON m.Id_media = ma.Id_media
          WHERE (? = 0 OR ca.Id_categorie = ?)
            AND (? = "" OR (a.titre LIKE ? OR a.contenu LIKE ? OR a.auteur LIKE ? OR a.slug LIKE ?))
            AND (? = "" OR a.date_evenement = ?)
@@ -260,6 +263,12 @@ if ($searchKeyword !== '') {
           $viewUrl  = article_url($article);
           $excerpt  = article_preview_text((string)($article['contenu'] ?? ''));
           $titleHtml = article_title_safe((string)($article['titre'] ?? ''));
+          $titleText = trim(html_entity_decode(strip_tags((string)($article['titre'] ?? '')), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+          $imagePath = trim((string)($article['image_path'] ?? ''));
+          if ($imagePath !== '' && !preg_match('#^https?://#i', $imagePath) && $imagePath[0] !== '/') {
+              $imagePath = '/' . ltrim($imagePath, '/');
+          }
+          $imageAlt = $titleText !== '' ? ('Image de l\'article : ' . $titleText) : 'Illustration de l\'article';
           $auteur   = htmlspecialchars($article['auteur'] ?: 'Rédaction', ENT_QUOTES, 'UTF-8');
           $date     = htmlspecialchars((string)($article['date_evenement'] ?: $article['created_at'] ?: ''), ENT_QUOTES, 'UTF-8');
 
@@ -288,11 +297,19 @@ if ($searchKeyword !== '') {
               </a>
             </div>
             <div class="card-img-wrap">
-              <div class="card-img-placeholder">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1">
-                  <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/>
-                </svg>
-              </div>
+              <?php if ($imagePath !== ''): ?>
+                <img
+                  src="<?= htmlspecialchars($imagePath, ENT_QUOTES, 'UTF-8') ?>"
+                  alt="<?= htmlspecialchars($imageAlt, ENT_QUOTES, 'UTF-8') ?>"
+                  loading="lazy"
+                >
+              <?php else: ?>
+                <div class="card-img-placeholder">
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1">
+                    <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/>
+                  </svg>
+                </div>
+              <?php endif; ?>
             </div>
 
           <?php elseif ($cardClass === 'secondary'): ?>
