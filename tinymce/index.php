@@ -75,6 +75,12 @@ $baseFilters          = [];
 if ($searchKeyword !== '')   $baseFilters['q']    = $searchKeyword;
 if ($selectedEventDate !== '') $baseFilters['date'] = $selectedEventDate;
 
+function category_url(string $slug, array $filters = []): string
+{
+  $base = '/accueil/categorie/' . rawurlencode($slug);
+  return !empty($filters) ? ($base . '?' . http_build_query($filters)) : $base;
+}
+
 function article_preview_text(string $html, int $maxLen = 180): string
 {
     $text = html_entity_decode(strip_tags($html), ENT_QUOTES | ENT_HTML5, 'UTF-8');
@@ -93,9 +99,14 @@ function article_title_safe(string $html): string
     return trim($safe) !== '' ? trim($safe) : 'Sans titre';
 }
 
-function article_url(string $slug): string
+function article_url(array $article): string
 {
+  $slug = trim((string)($article['slug'] ?? ''));
+  if ($slug !== '') {
     return '/article/' . rawurlencode($slug);
+  }
+
+  return '/article/id/' . (int)($article['Id_article'] ?? 0);
 }
 
 $today = (new DateTime())->format('d F Y');
@@ -144,11 +155,10 @@ $today = (new DateTime())->format('d F Y');
        href="<?= htmlspecialchars($allUrl, ENT_QUOTES, 'UTF-8') ?>">Toutes les actualités</a>
 
     <?php foreach ($categories as $cat): ?>
-      <?php $catUrl = '/accueil?' . http_build_query(array_merge($baseFilters, ['category' => (string)($cat['slug'] ?? '')])); ?>
+      <?php $catUrl = category_url((string)($cat['slug'] ?? ''), $baseFilters); ?>
       <a class="cat-link<?= $selectedCategorySlug === $cat['slug'] ? ' active' : '' ?>"
          href="<?= htmlspecialchars($catUrl, ENT_QUOTES, 'UTF-8') ?>">
         <?= htmlspecialchars($cat['name'] ?? '', ENT_QUOTES, 'UTF-8') ?>
-        <span style="font-weight:400;opacity:.6;">(<?= (int)($cat['article_count'] ?? 0) ?>)</span>
       </a>
     <?php endforeach; ?>
   </div>
@@ -157,10 +167,8 @@ $today = (new DateTime())->format('d F Y');
 <!-- ══════════ BARRE DE RECHERCHE ══════════ -->
 <div class="search-bar">
   <div class="search-bar-inner">
-    <form method="get" action="/accueil" style="display:contents;">
-      <?php if ($selectedCategorySlug !== ''): ?>
-        <input type="hidden" name="category" value="<?= htmlspecialchars($selectedCategorySlug, ENT_QUOTES, 'UTF-8') ?>">
-      <?php endif; ?>
+    <?php $searchAction = $selectedCategorySlug !== '' ? category_url($selectedCategorySlug) : '/accueil'; ?>
+    <form method="get" action="<?= htmlspecialchars($searchAction, ENT_QUOTES, 'UTF-8') ?>" style="display:contents;">
 
       <div class="search-field">
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
@@ -180,7 +188,7 @@ $today = (new DateTime())->format('d F Y');
 
       <button class="btn primary" type="submit">Filtrer</button>
       <?php
-        $resetUrl = '/accueil' . ($selectedCategorySlug !== '' ? ('?category=' . urlencode($selectedCategorySlug)) : '');
+        $resetUrl = $selectedCategorySlug !== '' ? category_url($selectedCategorySlug) : '/accueil';
       ?>
       <a class="btn" href="<?= htmlspecialchars($resetUrl, ENT_QUOTES, 'UTF-8') ?>">Réinitialiser</a>
     </form>
@@ -214,8 +222,7 @@ $today = (new DateTime())->format('d F Y');
     <div class="articles-grid">
       <?php foreach ($articles as $i => $article): ?>
         <?php
-          $slug     = trim((string)($article['slug'] ?? ''));
-          $viewUrl  = $slug !== '' ? article_url($slug) : '#';
+          $viewUrl  = article_url($article);
           $excerpt  = article_preview_text((string)($article['contenu'] ?? ''));
           $titleHtml = article_title_safe((string)($article['titre'] ?? ''));
           $auteur   = htmlspecialchars($article['auteur'] ?: 'Rédaction', ENT_QUOTES, 'UTF-8');
@@ -240,12 +247,10 @@ $today = (new DateTime())->format('d F Y');
               <?php if ($excerpt !== ''): ?>
                 <p class="card-excerpt"><?= htmlspecialchars($excerpt, ENT_QUOTES, 'UTF-8') ?></p>
               <?php endif; ?>
-              <?php if ($slug !== ''): ?>
-                <a class="card-read-more" href="<?= htmlspecialchars($viewUrl, ENT_QUOTES, 'UTF-8') ?>">
-                  Lire l'article
-                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
-                </a>
-              <?php endif; ?>
+              <a class="card-read-more" href="<?= htmlspecialchars($viewUrl, ENT_QUOTES, 'UTF-8') ?>">
+                Lire l'article
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+              </a>
             </div>
             <div class="card-img-wrap">
               <div class="card-img-placeholder">
@@ -268,12 +273,10 @@ $today = (new DateTime())->format('d F Y');
             <?php if ($excerpt !== ''): ?>
               <p class="card-excerpt"><?= htmlspecialchars($excerpt, ENT_QUOTES, 'UTF-8') ?></p>
             <?php endif; ?>
-            <?php if ($slug !== ''): ?>
-              <a class="card-read-more" href="<?= htmlspecialchars($viewUrl, ENT_QUOTES, 'UTF-8') ?>">
-                Lire l'article
-                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
-              </a>
-            <?php endif; ?>
+            <a class="card-read-more" href="<?= htmlspecialchars($viewUrl, ENT_QUOTES, 'UTF-8') ?>">
+              Lire l'article
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+            </a>
 
           <?php else: ?>
             <span class="card-label" style="font-size:9.5px;">Actualité</span>
@@ -283,11 +286,9 @@ $today = (new DateTime())->format('d F Y');
             <div class="card-meta" style="margin-top:6px;">
               <span><?= $date ?></span>
             </div>
-            <?php if ($slug !== ''): ?>
-              <a class="card-read-more" href="<?= htmlspecialchars($viewUrl, ENT_QUOTES, 'UTF-8') ?>">
-                Lire →
-              </a>
-            <?php endif; ?>
+            <a class="card-read-more" href="<?= htmlspecialchars($viewUrl, ENT_QUOTES, 'UTF-8') ?>">
+              Lire →
+            </a>
           <?php endif; ?>
         </article>
       <?php endforeach; ?>
