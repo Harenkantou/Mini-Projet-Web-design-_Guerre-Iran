@@ -75,6 +75,8 @@ $activePage = 'articles-list';
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin - Liste des articles</title>
+  <meta name="description" content="Back-office : gestion, recherche et filtrage des articles par catégorie et date.">
+  <meta name="robots" content="noindex,nofollow,noarchive">
   <link rel="stylesheet" href="/assets/css/admin-articles.css">
 </head>
 <body>
@@ -88,11 +90,11 @@ $activePage = 'articles-list';
   </div>
 
   <div class="card">
-    <div class="card-title">
+    <h2 class="card-title">
       <?= $selectedCategoryName !== ''
           ? ('Articles dans « ' . htmlspecialchars($selectedCategoryName, ENT_QUOTES, 'UTF-8') . ' »')
           : 'Tous les articles' ?>
-    </div>
+    </h2>
 
     <?php if ($created): ?>
       <div class="success">Article ajouté avec succès.</div>
@@ -197,7 +199,7 @@ $activePage = 'articles-list';
 
             <div class="article-actions-col">
               <a class="btn" href="<?= htmlspecialchars($viewUrl, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener">Voir plus</a>
-              <a class="btn primary" href="/admin/articles/create.php?id=<?= (int)$article['Id_article'] ?>">Modifier</a>
+              <a class="btn primary" href="/admin/articles/modifier/<?= (int)$article['Id_article'] ?>">Modifier</a>
             </div>
           </li>
         <?php endforeach; ?>

@@ -4,6 +4,30 @@ RewriteEngine On
 RewriteCond %{THE_REQUEST} \s/+index\.php(?:[\s?]|$) [NC]
 RewriteRule ^index\.php$ /accueil [R=302,L]
 
+# Redirect old admin URLs to canonical rewritten URLs
+RewriteCond %{THE_REQUEST} \s/+admin/articles/index\.php(?:[\s?]|$) [NC]
+RewriteRule ^admin/articles/index\.php$ /admin/articles [R=302,L]
+
+RewriteCond %{THE_REQUEST} \s/+admin/categorie/index\.php(?:[\s?]|$) [NC]
+RewriteRule ^admin/categorie/index\.php$ /admin/categories [R=302,L]
+
+RewriteCond %{THE_REQUEST} \s/+admin/articles/create\.php\?id=([0-9]+)\s [NC]
+RewriteRule ^admin/articles/create\.php$ /admin/articles/modifier/%1 [R=302,L]
+
+RewriteCond %{THE_REQUEST} \s/+admin/articles/create\.php(?:[\s?]|$) [NC]
+RewriteRule ^admin/articles/create\.php$ /admin/articles/new [R=302,L]
+
+RewriteCond %{THE_REQUEST} \s/+auth/login\.php(?:[\s?]|$) [NC]
+RewriteRule ^auth/login\.php$ /admin/login [R=302,L]
+
+# Rewritten admin routes
+RewriteRule ^admin/?$ admin/articles/index.php [L,QSA,NC]
+RewriteRule ^admin/articles/?$ admin/articles/index.php [L,QSA,NC]
+RewriteRule ^admin/articles/new/?$ admin/articles/create.php [L,QSA,NC]
+RewriteRule ^admin/articles/modifier/([0-9]+)/?$ admin/articles/create.php?id=$1 [L,QSA,NC]
+RewriteRule ^admin/categories/?$ admin/categorie/index.php [L,QSA,NC]
+RewriteRule ^admin/login/?$ auth/login.php [L,QSA,NC]
+
 # Keep existing files/directories accessible
 RewriteCond %{REQUEST_FILENAME} -f [OR]
 RewriteCond %{REQUEST_FILENAME} -d

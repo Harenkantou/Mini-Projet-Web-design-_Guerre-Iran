@@ -95,12 +95,31 @@ function text_from_html(string $html): string
     return trim(preg_replace('/\s+/', ' ', $text) ?? '');
 }
 
+function absolute_url_from_path(string $path): string
+{
+  $host = $_SERVER['HTTP_HOST'] ?? 'localhost:8000';
+  $https = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
+  $scheme = $https ? 'https' : 'http';
+
+  return $scheme . '://' . $host . $path;
+}
+
 $titleText       = $article !== null ? text_from_html((string)($article['titre'] ?? '')) : '';
 $pageTitle       = $titleText !== '' ? ($titleText . ' — Iran–Israël Info') : 'Article — Iran–Israël Info';
 $contentText     = $article !== null ? text_from_html((string)($article['contenu'] ?? '')) : '';
 $metaDescription = $contentText !== ''
     ? (mb_strlen($contentText, 'UTF-8') > 160 ? rtrim(mb_substr($contentText, 0, 160, 'UTF-8')) . '…' : $contentText)
     : 'Consultez cet article sur Iran–Israël Info.';
+
+$canonicalArticlePath = '/accueil';
+if ($article !== null) {
+  $articleSlug = trim((string)($article['slug'] ?? ''));
+  $articleIdCanonical = (int)($article['Id_article'] ?? 0);
+  $canonicalArticlePath = $articleSlug !== ''
+    ? ('/article/' . rawurlencode($articleSlug))
+    : ('/article/id/' . $articleIdCanonical);
+}
+$canonicalUrl = absolute_url_from_path($canonicalArticlePath);
 
 $isAdmin    = isset($_SESSION['user']);
 $activePage = 'front';
@@ -112,6 +131,11 @@ $activePage = 'front';
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><?= htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8') ?></title>
   <meta name="description" content="<?= htmlspecialchars($metaDescription, ENT_QUOTES, 'UTF-8') ?>">
+  <link rel="canonical" href="<?= htmlspecialchars($canonicalUrl, ENT_QUOTES, 'UTF-8') ?>">
+  <meta property="og:title" content="<?= htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8') ?>">
+  <meta property="og:description" content="<?= htmlspecialchars($metaDescription, ENT_QUOTES, 'UTF-8') ?>">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="<?= htmlspecialchars($canonicalUrl, ENT_QUOTES, 'UTF-8') ?>">
   <link rel="stylesheet" href="/assets/css/front.css">
 </head>
 <body>
@@ -123,7 +147,7 @@ $activePage = 'front';
       <span class="masthead-date"><?= (new DateTime())->format('d F Y') ?></span>
       <?php if ($isAdmin): ?>
         <div class="masthead-admin">
-          <a class="btn ghost sm" href="/admin/articles/index.php">Espace admin</a>
+          <a class="btn ghost sm" href="/admin/articles">Espace admin</a>
           <a class="btn sm" style="background:var(--accent);color:#fff;border-color:var(--accent);" href="/auth/logout.php">Déconnexion</a>
         </div>
       <?php endif; ?>
@@ -211,7 +235,7 @@ $activePage = 'front';
     <!-- GALERIE PHOTOS -->
     <?php if (count($articlePhotos) > 0): ?>
       <div class="gallery-section">
-        <h2 class="gallery-title">Photos (<?= count($articlePhotos) ?>)</h2>
+        <h2 class="gallery-title">Photos<h2>
         <div class="photo-grid">
           <?php foreach ($articlePhotos as $photo): ?>
             <?php $alt = trim((string)($photo['alt_text'] ?? '')); ?>

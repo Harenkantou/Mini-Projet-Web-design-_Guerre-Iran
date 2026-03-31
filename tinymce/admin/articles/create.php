@@ -76,12 +76,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 }
 
-                header('Location: /admin/articles/index.php?updated=1');
+                header('Location: /admin/articles?updated=1');
                 exit();
             }
 
             create_article($titre, $contenu, $auteur, $dateEvenement, $selectedCategoryIds);
-            header('Location: /admin/articles/index.php?created=1');
+              header('Location: /admin/articles?created=1');
             exit();
         } catch (Throwable $e) {
             $error = 'Erreur serveur: ' . $e->getMessage();
@@ -108,7 +108,7 @@ $heading    = $isEdit ? 'Modifier un article'          : 'Ajouter un article';
 $subtitle   = $isEdit
     ? 'Etape modification: ajout de photos dans le sous-dossier modif.'
     : 'Création avec l\'éditeur TinyMCE.';
-$formAction = $isEdit ? '/admin/articles/create.php?id=' . $articleId : '/admin/articles/create.php';
+$formAction = $isEdit ? '/admin/articles/modifier/' . $articleId : '/admin/articles/new';
 
 $defaultTitre   = $article['titre']          ?? '<h2>Titre de l\'article</h2>';
 $defaultAuteur  = $article['auteur']          ?? '';
@@ -128,6 +128,8 @@ $activePage = 'articles-new';
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><?= htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8') ?></title>
+  <meta name="description" content="Back-office : création et modification d'article avec structure éditoriale H1-H6 et gestion des médias.">
+  <meta name="robots" content="noindex,nofollow,noarchive">
   <link rel="stylesheet" href="/assets/css/admin-articles.css">
   <script src="/tinymce/js/tinymce/tinymce.min.js"></script>
 </head>
@@ -142,7 +144,7 @@ $activePage = 'articles-new';
   </div>
 
   <div class="card">
-    <div class="card-title"><?= $isEdit ? 'Modifier les informations' : 'Informations de l\'article' ?></div>
+    <h2 class="card-title"><?= $isEdit ? 'Modifier les informations' : 'Informations de l\'article' ?></h2>
 
     <?php if ($error !== ''): ?>
       <div class="error"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></div>
@@ -235,7 +237,7 @@ $activePage = 'articles-new';
         <button class="btn primary" type="submit">
           <?= $isEdit ? 'Enregistrer les modifications' : 'Enregistrer l\'article' ?>
         </button>
-        <a class="btn" href="/admin/articles/index.php">Annuler</a>
+        <a class="btn" href="/admin/articles">Annuler</a>
       </div>
     </form>
   </div>

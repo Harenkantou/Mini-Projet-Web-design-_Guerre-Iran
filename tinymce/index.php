@@ -109,15 +109,50 @@ function article_url(array $article): string
   return '/article/id/' . (int)($article['Id_article'] ?? 0);
 }
 
+function absolute_url_from_path(string $path): string
+{
+    $host = $_SERVER['HTTP_HOST'] ?? 'localhost:8000';
+    $https = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
+    $scheme = $https ? 'https' : 'http';
+
+    return $scheme . '://' . $host . $path;
+}
+
 $today = (new DateTime())->format('d F Y');
+
+$canonicalPath = $selectedCategorySlug !== ''
+    ? category_url($selectedCategorySlug, $baseFilters)
+    : ('/accueil' . (!empty($baseFilters) ? ('?' . http_build_query($baseFilters)) : ''));
+$canonicalUrl = absolute_url_from_path($canonicalPath);
+
+$pageTitle = 'Iran–Israël Info — Actualités & Analyses';
+if ($selectedCategoryName !== '') {
+    $pageTitle = $selectedCategoryName . ' — Iran–Israël Info';
+}
+if ($searchKeyword !== '') {
+    $pageTitle .= ' | Recherche: ' . $searchKeyword;
+}
+
+$metaDescription = 'Suivez en temps réel les développements du conflit Iran–Israël : analyses géopolitiques, décryptages et reportages.';
+if ($selectedCategoryName !== '') {
+    $metaDescription = 'Articles de la catégorie ' . $selectedCategoryName . ' sur Iran–Israël Info.';
+}
+if ($searchKeyword !== '') {
+    $metaDescription = 'Résultats de recherche pour "' . $searchKeyword . '" sur Iran–Israël Info.';
+}
 ?>
 <!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Iran–Israël Info — Actualités & Analyses</title>
-  <meta name="description" content="Suivez en temps réel les développements du conflit Iran–Israël : analyses géopolitiques, décryptages et reportages.">
+  <title><?= htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8') ?></title>
+  <meta name="description" content="<?= htmlspecialchars($metaDescription, ENT_QUOTES, 'UTF-8') ?>">
+  <link rel="canonical" href="<?= htmlspecialchars($canonicalUrl, ENT_QUOTES, 'UTF-8') ?>">
+  <meta property="og:title" content="<?= htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8') ?>">
+  <meta property="og:description" content="<?= htmlspecialchars($metaDescription, ENT_QUOTES, 'UTF-8') ?>">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="<?= htmlspecialchars($canonicalUrl, ENT_QUOTES, 'UTF-8') ?>">
   <link rel="stylesheet" href="/assets/css/front.css">
 </head>
 <body>
@@ -129,10 +164,10 @@ $today = (new DateTime())->format('d F Y');
       <span class="masthead-date"><?= htmlspecialchars($today, ENT_QUOTES, 'UTF-8') ?></span>
       <div class="masthead-admin">
         <?php if ($isAdmin): ?>
-          <a class="btn ghost sm" href="/admin/articles/index.php">Espace admin</a>
+          <a class="btn ghost sm" href="/admin/articles">Espace admin</a>
           <a class="btn sm" style="background:var(--accent);color:#fff;border-color:var(--accent);" href="/auth/logout.php">Déconnexion</a>
         <?php else: ?>
-          <a class="btn ghost sm" href="/auth/login.php">Connexion</a>
+          <a class="btn ghost sm" href="/admin/login">Connexion</a>
         <?php endif; ?>
       </div>
     </div>
@@ -202,14 +237,14 @@ $today = (new DateTime())->format('d F Y');
     <div class="db-error">Erreur base de données : <?= htmlspecialchars($dbError, ENT_QUOTES, 'UTF-8') ?></div>
   <?php endif; ?>
 
-  <div class="section-heading">
+  <h2 class="section-heading">
     <?= $selectedCategoryName !== ''
         ? htmlspecialchars($selectedCategoryName, ENT_QUOTES, 'UTF-8')
         : 'À la une' ?>
     <?php if ($searchKeyword !== ''): ?>
       &mdash; Résultats pour « <?= htmlspecialchars($searchKeyword, ENT_QUOTES, 'UTF-8') ?> »
     <?php endif; ?>
-  </div>
+  </h2>
 
   <?php if (count($articles) === 0 && $dbError === ''): ?>
     <div class="empty-state">
