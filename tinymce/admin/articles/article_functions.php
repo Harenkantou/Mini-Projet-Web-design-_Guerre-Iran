@@ -2,9 +2,15 @@
 
 require_once __DIR__ . '/../../db.php';
 
-function fetch_admin_articles(int $limit = 50): array
+function fetch_admin_articles(int $limit = 50, string $keyword = '', string $eventDate = ''): array
 {
     $articles = [];
+
+    $keyword = trim($keyword);
+    $eventDate = trim($eventDate);
+    if ($eventDate !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $eventDate)) {
+        $eventDate = '';
+    }
 
     $conn = db_connect();
     $hasAltText = media_table_has_alt_text_column($conn);
@@ -12,7 +18,7 @@ function fetch_admin_articles(int $limit = 50): array
         ? 'm.alt_text AS image_alt_text'
         : "'' AS image_alt_text";
 
-    $stmt = $conn->prepare(
+    $sql =
         'SELECT a.Id_article, a.slug, a.titre, a.contenu, a.auteur, a.date_evenement, a.created_at, a.updated_at, m.path AS image_path, ' . $imageAltField . '
          FROM article a
          LEFT JOIN (
@@ -20,11 +26,47 @@ function fetch_admin_articles(int $limit = 50): array
              FROM media_article
              GROUP BY Id_article
          ) am ON am.Id_article = a.Id_article
-         LEFT JOIN media m ON m.Id_media = am.first_media_id
-         ORDER BY COALESCE(a.updated_at, a.created_at) DESC
-         LIMIT ?'
-    );
-    $stmt->bind_param('i', $limit);
+         LEFT JOIN media m ON m.Id_media = am.first_media_id';
+
+    $hasKeyword = $keyword !== '';
+    $hasEventDate = $eventDate !== '';
+
+    if ($hasKeyword && $hasEventDate) {
+        $stmt = $conn->prepare(
+            $sql . '
+             WHERE a.date_evenement = ?
+               AND (a.titre LIKE ? OR a.contenu LIKE ? OR a.auteur LIKE ? OR a.slug LIKE ?)
+             ORDER BY COALESCE(a.updated_at, a.created_at) DESC
+             LIMIT ?'
+        );
+        $like = '%' . $keyword . '%';
+        $stmt->bind_param('sssssi', $eventDate, $like, $like, $like, $like, $limit);
+    } elseif ($hasKeyword) {
+        $stmt = $conn->prepare(
+            $sql . '
+             WHERE (a.titre LIKE ? OR a.contenu LIKE ? OR a.auteur LIKE ? OR a.slug LIKE ?)
+             ORDER BY COALESCE(a.updated_at, a.created_at) DESC
+             LIMIT ?'
+        );
+        $like = '%' . $keyword . '%';
+        $stmt->bind_param('ssssi', $like, $like, $like, $like, $limit);
+    } elseif ($hasEventDate) {
+        $stmt = $conn->prepare(
+            $sql . '
+             WHERE a.date_evenement = ?
+             ORDER BY COALESCE(a.updated_at, a.created_at) DESC
+             LIMIT ?'
+        );
+        $stmt->bind_param('si', $eventDate, $limit);
+    } else {
+        $stmt = $conn->prepare(
+            $sql . '
+             ORDER BY COALESCE(a.updated_at, a.created_at) DESC
+             LIMIT ?'
+        );
+        $stmt->bind_param('i', $limit);
+    }
+
     $stmt->execute();
     $result = $stmt->get_result();
 
