@@ -5,6 +5,6 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 }
 
 if (!isset($_SESSION['user'])) {
-    header('Location: /auth/login.php');
+    header('Location: /admin/login');
     exit();
 }

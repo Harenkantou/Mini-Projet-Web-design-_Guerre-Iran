@@ -39,7 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 (string)($_POST['name']        ?? ''),
                 (string)($_POST['description'] ?? '')
             );
-            header('Location: /admin/categorie/index.php?created=1');
+            header('Location: /admin/categories?created=1');
             exit();
         }
 
@@ -50,14 +50,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 (string)($_POST['name']        ?? ''),
                 (string)($_POST['description'] ?? '')
             );
-            header('Location: /admin/categorie/index.php?updated=1');
+            header('Location: /admin/categories?updated=1');
             exit();
         }
 
         if ($action === 'delete') {
             $id = max(0, (int)($_POST['id'] ?? 0));
             delete_category($id);
-            header('Location: /admin/categorie/index.php?deleted=1');
+            header('Location: /admin/categories?deleted=1');
             exit();
         }
     } catch (Throwable $e) {
@@ -90,6 +90,8 @@ $activePage = 'categories';
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin - Gestion catégorie</title>
+  <meta name="description" content="Back-office : gestion des catégories, slugs SEO et organisation des articles.">
+  <meta name="robots" content="noindex,nofollow,noarchive">
   <link rel="stylesheet" href="/assets/css/admin-articles.css">
 </head>
 <body>
@@ -99,19 +101,19 @@ $activePage = 'categories';
 <div class="wrap">
   <div class="page-head">
     <h1>Gestion des catégories</h1>
-    <div class="muted">CRUD des catégories dans /admin/categorie.</div>
+    <div class="muted">CRUD des catégories dans /admin/categories.</div>
   </div>
 
   <!-- FORM CARD -->
   <div class="card">
-    <div class="card-title"><?= $mode === 'edit' ? 'Modifier la catégorie' : 'Ajouter une catégorie' ?></div>
+    <h2 class="card-title"><?= $mode === 'edit' ? 'Modifier la catégorie' : 'Ajouter une catégorie' ?></h2>
 
     <?php if ($created): ?><div class="success">Catégorie ajoutée avec succès.</div><?php endif; ?>
     <?php if ($updated): ?><div class="success">Catégorie modifiée avec succès.</div><?php endif; ?>
     <?php if ($deleted): ?><div class="success">Catégorie supprimée avec succès.</div><?php endif; ?>
     <?php if ($error !== ''): ?><div class="error">Erreur&nbsp;: <?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
 
-    <form method="post" action="/admin/categorie/index.php<?= $mode === 'edit' ? '?edit=' . (int)$editCategoryId : '' ?>">
+    <form method="post" action="/admin/categories<?= $mode === 'edit' ? '?edit=' . (int)$editCategoryId : '' ?>">
       <input type="hidden" name="action" value="<?= $mode === 'edit' ? 'update' : 'create' ?>">
       <?php if ($mode === 'edit'): ?>
         <input type="hidden" name="id" value="<?= (int)$editCategoryId ?>">
@@ -137,7 +139,7 @@ $activePage = 'categories';
           <?= $mode === 'edit' ? 'Mettre à jour' : 'Ajouter' ?>
         </button>
         <?php if ($mode === 'edit'): ?>
-          <a class="btn" href="/admin/categorie/index.php">Annuler</a>
+          <a class="btn" href="/admin/categories">Annuler</a>
         <?php endif; ?>
       </div>
     </form>
@@ -145,12 +147,12 @@ $activePage = 'categories';
 
   <!-- LIST CARD -->
   <div class="card">
-    <div class="card-title">
+    <h2 class="card-title">
       Liste des catégories
       <?php if (count($categories) > 0): ?>
         <span class="badge" style="margin-left:8px;"><?= count($categories) ?></span>
       <?php endif; ?>
-    </div>
+    </h2>
 
     <?php if (count($categories) === 0): ?>
       <p class="muted">Aucune catégorie pour le moment.</p>
@@ -178,8 +180,8 @@ $activePage = 'categories';
                 <td>
                   <div style="display:flex;gap:6px;">
                     <a class="btn" style="padding:6px 12px;font-size:12px;"
-                      href="/admin/categorie/index.php?edit=<?= (int)$category['Id_categorie'] ?>">Modifier</a>
-                    <form method="post" action="/admin/categorie/index.php"
+                      href="/admin/categories?edit=<?= (int)$category['Id_categorie'] ?>">Modifier</a>
+                    <form method="post" action="/admin/categories"
                       onsubmit="return confirm('Supprimer cette catégorie ?');" style="display:inline;">
                       <input type="hidden" name="action" value="delete">
                       <input type="hidden" name="id" value="<?= (int)$category['Id_categorie'] ?>">

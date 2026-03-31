@@ -3,7 +3,7 @@ session_start();
 require_once __DIR__ . '/auth_functions.php';
 
 if (isset($_SESSION['user'])) {
-    header('Location: /admin/articles/index.php');
+  header('Location: /admin/articles');
     exit();
 }
 
@@ -18,7 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         try {
             if (login_user($email, $password)) {
-                header('Location: /admin/articles/index.php');
+              header('Location: /admin/articles');
                 exit();
             }
             $error = 'Identifiants invalides.';
@@ -34,6 +34,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Connexion — Back Office</title>
+  <meta name="description" content="Connexion sécurisée à l'espace d'administration.">
+  <meta name="robots" content="noindex,nofollow,noarchive">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -182,7 +184,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <h1 class="login-greeting">Connexion</h1>
       <p class="login-desc">Accès réservé aux administrateurs.</p>
 
-      <form method="post" action="/auth/login.php">
+      <form method="post" action="/admin/login">
 
         <div class="field">
           <label for="email">Adresse e-mail</label>

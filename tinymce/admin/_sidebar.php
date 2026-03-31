@@ -218,7 +218,7 @@ textarea{min-height:120px;resize:vertical;}
   <nav class="bo-nav">
     <div class="bo-section-label">Sections</div>
 
-    <a class="bo-link <?= $activePage === 'articles-new'  ? 'active' : '' ?>" href="/admin/articles/create.php">
+    <a class="bo-link <?= $activePage === 'articles-new'  ? 'active' : '' ?>" href="/admin/articles/new">
       <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="8" cy="8" r="6"/>
         <line x1="8" y1="5" x2="8" y2="11"/>
@@ -227,14 +227,14 @@ textarea{min-height:120px;resize:vertical;}
       Ajouter un article
     </a>
 
-    <a class="bo-link <?= $activePage === 'categories'    ? 'active' : '' ?>" href="/admin/categorie/index.php">
+    <a class="bo-link <?= $activePage === 'categories'    ? 'active' : '' ?>" href="/admin/categories">
       <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
         <path d="M2 4h12M2 8h8M2 12h5"/>
       </svg>
       Gestion catégorie
     </a>
 
-    <a class="bo-link <?= $activePage === 'articles-list' ? 'active' : '' ?>" href="/admin/articles/index.php">
+    <a class="bo-link <?= $activePage === 'articles-list' ? 'active' : '' ?>" href="/admin/articles">
       <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
         <rect x="2" y="3" width="12" height="10" rx="1.5"/>
         <line x1="5" y1="6.5" x2="11" y2="6.5"/>
