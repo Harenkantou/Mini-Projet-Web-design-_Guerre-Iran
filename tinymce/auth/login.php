@@ -57,7 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="hint">
       Compte de demo: admin@local.dev / admin123
     </div>
-    <div class="back"><a href="/">Retour a l'accueil</a></div>
+    <div class="back"><a href="/accueil">Retour a l'accueil</a></div>
   </form>
 </body>
 </html>

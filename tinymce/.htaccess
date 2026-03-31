@@ -1,0 +1,16 @@
+RewriteEngine On
+
+# Redirect public /index.php to /accueil (front canonical URL)
+RewriteCond %{THE_REQUEST} \s/+index\.php(?:[\s?]|$) [NC]
+RewriteRule ^index\.php$ /accueil [R=302,L]
+
+# Keep existing files/directories accessible
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# SEO URL: /article/{slug} -> /article/single.php?slug={slug}
+RewriteRule ^article/([^/]+)/?$ article/single.php?slug=$1 [L,QSA,NC]
+
+# SEO URL: /accueil -> /index.php
+RewriteRule ^accueil/?$ index.php [L,QSA,NC]

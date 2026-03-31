@@ -243,7 +243,7 @@ textarea{min-height:120px;resize:vertical;}
       Liste d'articles
     </a>
 
-    <a class="bo-link <?= $activePage === 'front' ? 'active' : '' ?>" href="/" target="_blank">
+    <a class="bo-link <?= $activePage === 'front' ? 'active' : '' ?>" href="/accueil" target="_blank">
       <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="8" cy="8" r="6"/>
         <path d="M2 8h12M8 2c-1.5 2-2 4-2 6s.5 4 2 6M8 2c1.5 2 2 4 2 6s-.5 4-2 6"/>

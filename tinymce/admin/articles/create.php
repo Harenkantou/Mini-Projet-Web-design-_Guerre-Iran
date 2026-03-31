@@ -219,7 +219,8 @@ $activePage = 'articles-new';
               <div class="image-gallery">
                 <?php foreach ($articleImages as $img): ?>
                   <div class="image-item">
-                    <img src="<?= htmlspecialchars((string)($img['path'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" alt="Media <?= (int)($img['Id_media'] ?? 0) ?>">
+                    <?php $imageAlt = trim((string)($img['alt_text'] ?? '')); ?>
+                    <img src="<?= htmlspecialchars((string)($img['path'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($imageAlt !== '' ? $imageAlt : ('Media ' . (int)($img['Id_media'] ?? 0)), ENT_QUOTES, 'UTF-8') ?>">
                     <div class="compact-meta"><?= htmlspecialchars((string)($img['path'] ?? ''), ENT_QUOTES, 'UTF-8') ?></div>
                   </div>
                 <?php endforeach; ?>

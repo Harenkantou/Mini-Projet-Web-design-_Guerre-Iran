@@ -64,8 +64,12 @@ CREATE TABLE documents(
 CREATE TABLE media(
    Id_media INT AUTO_INCREMENT,
    path TEXT,
+   alt_text VARCHAR(255),
    PRIMARY KEY(Id_media)
 );
+
+ALTER TABLE media
+ADD COLUMN IF NOT EXISTS alt_text VARCHAR(255) NULL AFTER path;
 
 CREATE TABLE media_article(
    Id_media_article INT AUTO_INCREMENT,
